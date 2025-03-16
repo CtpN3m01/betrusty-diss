@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { abstractTestnet } from "thirdweb/chains";
 import { ConnectButton } from "thirdweb/react";
