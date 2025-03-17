@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { abstract } from "thirdweb/chains";
+import { zkSync } from "thirdweb/chains";
 import { ConnectButton } from "thirdweb/react";
 // import { TransactionButton, useActiveAccount} from "thirdweb/react";
 
@@ -63,7 +63,7 @@ export default function Login() {
           <h2 className="text-3xl font-bold mb-2 text-white">BeTrusty Abstract DISS</h2>
         </motion.div>
         
-        <ConnectButton client={client} chain={abstract} />
+        <ConnectButton client={client} chain={zkSync} />
         
         {/* {account && (
           <TransactionButton
