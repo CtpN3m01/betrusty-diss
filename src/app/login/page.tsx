@@ -2,11 +2,22 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { abstractTestnet } from "thirdweb/chains";
+import { abstract } from "thirdweb/chains";
 import { ConnectButton } from "thirdweb/react";
+import { TransactionButton, useActiveAccount} from "thirdweb/react";
+import { contract } from '../contract';
+import { safeTransferFrom } from "thirdweb/extensions/erc1155";
+
+
 import { client } from "../client"
 
 export default function Login() {
+  const account = useActiveAccount();
+  const handleLogClick = () => {
+    console.log("Address del cliente conectado>> ", client.clientId);
+  };
+
+
   
   return (
     <div className="relative h-screen w-screen bg-gradient-to-br from-indigo-900 to-blue-500 flex items-center justify-center overflow-hidden">
@@ -55,7 +66,24 @@ export default function Login() {
           <h2 className="text-3xl font-bold mb-2 text-white">BeTrusty Abstract DISS</h2>
         </motion.div>
         
-        <ConnectButton client={client} chain={abstractTestnet} />
+        <ConnectButton client={client} chain={abstract} />
+        
+        {account && (
+          <TransactionButton
+            // transaction={() => {
+            //   return safeTransferFrom({
+            //     contract: contract, 
+            //     amount: "0.10",
+            //     to: "0xc5a3797591B306D1D03De489303Ed105b644edDA",
+            //   });
+            // }}
+            className="mt-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg"
+          >
+            Realizar Deposito
+          </TransactionButton>
+        )}
+
+        
         
       </motion.div>
     </div>
