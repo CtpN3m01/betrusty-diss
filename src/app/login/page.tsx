@@ -4,18 +4,15 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { abstract } from "thirdweb/chains";
 import { ConnectButton } from "thirdweb/react";
-import { TransactionButton, useActiveAccount} from "thirdweb/react";
-import { contract } from '../contract';
-import { safeTransferFrom } from "thirdweb/extensions/erc1155";
+// import { TransactionButton, useActiveAccount} from "thirdweb/react";
+
 
 
 import { client } from "../client"
 
 export default function Login() {
-  const account = useActiveAccount();
-  const handleLogClick = () => {
-    console.log("Address del cliente conectado>> ", client.clientId);
-  };
+  // const account = useActiveAccount();
+  
 
 
   
@@ -68,7 +65,7 @@ export default function Login() {
         
         <ConnectButton client={client} chain={abstract} />
         
-        {account && (
+        {/* {account && (
           <TransactionButton
             // transaction={() => {
             //   return safeTransferFrom({
@@ -81,7 +78,7 @@ export default function Login() {
           >
             Realizar Deposito
           </TransactionButton>
-        )}
+        )} */}
 
         
         
