@@ -2,16 +2,31 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+
+// Importamos la red de zkSync Sepolia y el sdk de ConnectButton de thirdweb
 import { zkSyncSepolia } from "thirdweb/chains";
 import { ConnectButton } from "thirdweb/react";
+
+// Necesitamos importar el cliente de thirdweb para poder usarlo en el contrato
+import { client } from "./client"
 import { useActiveAccount } from "thirdweb/react";
+
+// importamos las funciones necesarias para interactuar con el contrato
 import {
   getContract,
   prepareContractCall,
   sendTransaction,
 } from "thirdweb";
-import { toWei } from "thirdweb/utils";
-import { client } from "./client"
+
+// Importamos las funciones necesarias para preparar el evento y parsear los logs
+import { 
+  prepareEvent, 
+  waitForReceipt, 
+  parseEventLogs,  
+
+} from "thirdweb";
+
+
 
 // 1. Define the contract
 const contract = getContract({
@@ -20,8 +35,13 @@ const contract = getContract({
   chain: zkSyncSepolia,
 });
 
+const resultadoSuma = prepareEvent({
+  signature: "event resultadoCalculado(int256 resultado)",
+});
 
 export default function DISS() {
+  // Variables de estado para los números A y B, el resultado, el loading y el error
+  // y la cuenta activa logeada en connectButton
   const account = useActiveAccount();
   const [a, setA] = React.useState(0);
   const [b, setB] = React.useState(0);
@@ -82,18 +102,32 @@ export default function DISS() {
         {account && (
           <div className="w-full flex flex-col items-center mt-8 gap-4">
             <input
-              type="number"
-              value={a}
-              onChange={e => setA(Number(e.target.value))}
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={String(a)}
+              onChange={e => {
+                const val = e.target.value;
+                if (/^-?\d*$/.test(val)) {
+                  setA(val === '' ? 0 : parseInt(val, 10));
+                }
+              }}
               className="rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
               placeholder="Número A"
+              autoComplete="off"
             />
             <input
-              type="number"
-              value={b}
-              onChange={e => setB(Number(e.target.value))}
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={String(b)}
+              onChange={e => {
+                const val = e.target.value;
+                if (/^-?\d*$/.test(val)) {
+                  setB(val === '' ? 0 : parseInt(val, 10));
+                }
+              }}
               className="rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
               placeholder="Número B"
+              autoComplete="off"
             />
             <button
               onClick={async () => {
@@ -103,21 +137,37 @@ export default function DISS() {
                 try {
                   
                   // 2. Prepare the contract call for suma(int256,int256)
-                  const tx = prepareContractCall({
+                  const call = prepareContractCall({
                     contract,
                     method: "function suma(int256 a, int256 b) returns (int256)",
                     params: [BigInt(a), BigInt(b)],
                   });
 
                   // 3. Send the transaction and wait for receipt
-                  const result = await sendTransaction({ transaction: tx, account });
+                  const txResult = await sendTransaction({ transaction: call, account });
+                  // 4. Muestra el hash de la transacción realizada
+                  console.log("Transaction hash:", txResult.transactionHash);
+
+                  // 5. Espera a que la transacción sea confirmada
+                  const receipt = await waitForReceipt(txResult);
+
+                  const events = parseEventLogs({
+                    logs: receipt.logs,
+                    events: [resultadoSuma],
+                  });
+
+                  console.log("Eventos:", events);
                   
-                  // 4. Get the result from the receipt
-                  console.log("Transaction hash:", result.transactionHash);
+                  if (events.length) {
+                    const valor = Number(events[0].args.resultado);
+                    setResult(valor);
+                  }                     
 
-
-                } catch (err: any) {
-                  setError("Error al llamar al contrato: " + (err?.message || err?.toString()));
+                } catch (err) {
+                  const errorMsg = err && typeof err === 'object' && 'message' in err
+                    ? (err as { message?: string }).message
+                    : String(err);
+                  setError("Error al llamar al contrato: " + (errorMsg || ''));
                 } finally {
                   setLoading(false);
                 }
