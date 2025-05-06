@@ -11,14 +11,14 @@ import { ConnectButton } from "thirdweb/react";
 import { client } from "./client"
 import { useActiveAccount } from "thirdweb/react";
 
-// importamos las funciones necesarias para interactuar con el contrato
+// importamos las funciones necesarias para enviar transacciones al contrato
 import {
   getContract,
   prepareContractCall,
   sendTransaction,
 } from "thirdweb";
 
-// Importamos las funciones necesarias para preparar el evento y parsear los logs
+// Importamos las funciones necesarias para preparar el evento y parsear los logs para poder interactuar con el evento resultadoCalculado
 import { 
   prepareEvent, 
   waitForReceipt, 
@@ -145,10 +145,11 @@ export default function DISS() {
 
                   // 3. Send the transaction and wait for receipt
                   const txResult = await sendTransaction({ transaction: call, account });
-                  // 4. Muestra el hash de la transacción realizada
+
+                  // Muestra el hash de la transacción realizada para developer
                   console.log("Transaction hash:", txResult.transactionHash);
 
-                  // 5. Espera a que la transacción sea confirmada
+                  // 4. Espera a que la transacción sea confirmada
                   const receipt = await waitForReceipt(txResult);
 
                   const events = parseEventLogs({
@@ -177,6 +178,7 @@ export default function DISS() {
             >
               {loading ? "Calculando..." : "Sumar"}
             </button>
+            
             <div className="text-lg text-white font-semibold w-full text-center min-h-[2rem]">
               {error && <span className="text-red-300">{error}</span>}
               {result !== null && !error && (
