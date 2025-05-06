@@ -93,7 +93,7 @@ export default function DISS() {
           transition={{ delay: 0.3, duration: 0.8 }}
           className="mb-8"
         >
-          <h2 className="text-3xl font-bold mb-2 text-white">BeTrusty Abstract DISS</h2>
+          <h2 className="text-3xl font-bold mb-2 text-white">BeTrusty DISS</h2>
         </motion.div>
 
         <ConnectButton client={client} chain={zkSyncSepolia} />
