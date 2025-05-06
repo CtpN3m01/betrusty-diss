@@ -27,6 +27,10 @@ import {
 } from "thirdweb";
 
 
+// Importamos las funciones necesarias para estimar el uso de GAS
+
+import { useEstimateGas } from "thirdweb/react";
+import { getGasPrice, getEthUsdPrice } from "./utils";
 
 // 1. Define the contract
 const contract = getContract({
@@ -40,6 +44,8 @@ const resultadoSuma = prepareEvent({
 });
 
 export default function DISS() {
+  // Hook para estimar el gas, debe ir dentro del componente
+  const { mutateAsync: estimateGas } = useEstimateGas();
   // Variables de estado para los números A y B, el resultado, el loading y el error
   // y la cuenta activa logeada en connectButton
   const account = useActiveAccount();
@@ -48,6 +54,9 @@ export default function DISS() {
   const [result, setResult] = React.useState<number | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [estimatedGas, setEstimatedGas] = React.useState<bigint | null>(null);
+  const [estimatedUsd, setEstimatedUsd] = React.useState<number | null>(null);
+  
 
   return (
     <div className="relative h-screen w-screen bg-gradient-to-br from-indigo-900 to-blue-500 flex items-center justify-center overflow-hidden">
@@ -134,6 +143,8 @@ export default function DISS() {
                 setLoading(true);
                 setError(null);
                 setResult(null);
+                setEstimatedGas(null);
+                setEstimatedUsd(null);
                 try {
                   
                   // 2. Prepare the contract call for suma(int256,int256)
@@ -142,6 +153,27 @@ export default function DISS() {
                     method: "function suma(int256 a, int256 b) returns (int256)",
                     params: [BigInt(a), BigInt(b)],
                   });
+
+                  // Estimar el gas de enviar la transacción
+
+                  const gasResult = await estimateGas(call);
+                  setEstimatedGas(gasResult as bigint);
+
+                  // Calcular el costo estimado en USD
+                  try {
+                    const [gasPrice, ethUsd] = await Promise.all([
+                      getGasPrice(),
+                      getEthUsdPrice(),
+                    ]);
+                    // gasResult (bigint) * gasPrice (bigint) = total wei
+                    const totalWei = (gasResult as bigint) * gasPrice;
+                    // Convertir a ETH (1 ETH = 1e18 wei)
+                    const totalEth = Number(totalWei) / 1e18;
+                    const usd = totalEth * ethUsd;
+                    setEstimatedUsd(usd);
+                  } catch (e) {
+                    setEstimatedUsd(null);
+                  }
 
                   // 3. Send the transaction and wait for receipt
                   const txResult = await sendTransaction({ transaction: call, account });
@@ -179,6 +211,13 @@ export default function DISS() {
               {loading ? "Calculando..." : "Sumar"}
             </button>
             
+
+            {estimatedUsd !== null && estimatedUsd && (
+              <div className="text-sm text-white w-full text-center">
+                Costo estimado: ${estimatedUsd.toFixed(6)} USD
+              </div>
+            )}
+
             <div className="text-lg text-white font-semibold w-full text-center min-h-[2rem]">
               {error && <span className="text-red-300">{error}</span>}
               {result !== null && !error && (
