@@ -1,7 +1,21 @@
-'use client';
+"use client";
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { motion, AnimatePresence } from 'framer-motion';
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 
 // Importamos la red de zkSync Sepolia y el sdk de ConnectButton de thirdweb
 import { zkSyncSepolia } from "thirdweb/chains";
@@ -23,210 +37,102 @@ import {
   prepareEvent, 
   waitForReceipt, 
   parseEventLogs,  
-
 } from "thirdweb";
 
-
 // Importamos las funciones necesarias para estimar el uso de GAS
-
 import { useEstimateGas } from "thirdweb/react";
 import { getGasPrice, getEthUsdPrice } from "./utils";
 
-// 1. Define the contract
-const contract = getContract({
-  client,
-  address: "0x05bB90f25551b334a4Ac962612CcE3b4f08Fae8d",
-  chain: zkSyncSepolia,
-});
-
-const resultadoSuma = prepareEvent({
-  signature: "event resultadoCalculado(int256 resultado)",
-});
-
 export default function DISS() {
-  // Hook para estimar el gas, debe ir dentro del componente
-  const { mutateAsync: estimateGas } = useEstimateGas();
-  // Variables de estado para los números A y B, el resultado, el loading y el error
-  // y la cuenta activa logeada en connectButton
+  // Obtenemos la cuenta activa del usuario
   const account = useActiveAccount();
-  const [a, setA] = React.useState(0);
-  const [b, setB] = React.useState(0);
-  const [result, setResult] = React.useState<number | null>(null);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [estimatedGas, setEstimatedGas] = React.useState<bigint | null>(null);
-  const [estimatedUsd, setEstimatedUsd] = React.useState<number | null>(null);
-  
 
   return (
-    <div className="relative h-screen w-screen bg-gradient-to-br from-indigo-900 to-blue-500 flex items-center justify-center overflow-hidden">
-      {/* Background animated shapes */}
-      <motion.div 
-        className="absolute -top-20 -left-20 w-72 h-72 bg-blue-400 rounded-full opacity-30 blur-3xl"
-        animate={{
-          x: [0, 30, 0],
-          y: [0, 40, 0],
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-      />
-      <motion.div 
-        className="absolute -bottom-20 -right-20 w-80 h-80 bg-purple-400 rounded-full opacity-30 blur-3xl"
-        animate={{
-          x: [0, -30, 0],
-          y: [0, -40, 0],
-        }}
-        transition={{
-          duration: 7,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-      />
-
-      {/* Login Card */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="relative backdrop-blur-xl bg-white/20 rounded-xl p-8 w-full max-w-md shadow-2xl border border-white/20 flex flex-col items-center"
-        style={{
-          boxShadow: "0 10px 30px rgba(0,0,0,0.1), inset 0 0 0 1px rgba(255,255,255,0.2)"
-        }}
-      >
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.8 }}
-          className="mb-8"
-        >
-          <h2 className="text-3xl font-bold mb-2 text-white">BeTrusty DISS</h2>
-        </motion.div>
-
-        <ConnectButton client={client} chain={zkSyncSepolia} />
-
-        {/* Show sum inputs and result only if user is connected */}
-        {account && (
-          <div className="w-full flex flex-col items-center mt-8 gap-4">
-            <input
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={String(a)}
-              onChange={e => {
-                const val = e.target.value;
-                if (/^-?\d*$/.test(val)) {
-                  setA(val === '' ? 0 : parseInt(val, 10));
-                }
-              }}
-              className="rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
-              placeholder="Número A"
-              autoComplete="off"
-            />
-            <input
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={String(b)}
-              onChange={e => {
-                const val = e.target.value;
-                if (/^-?\d*$/.test(val)) {
-                  setB(val === '' ? 0 : parseInt(val, 10));
-                }
-              }}
-              className="rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
-              placeholder="Número B"
-              autoComplete="off"
-            />
-            <button
-              onClick={async () => {
-                setLoading(true);
-                setError(null);
-                setResult(null);
-                setEstimatedGas(null);
-                setEstimatedUsd(null);
-                try {
-                  
-                  // 2. Prepare the contract call for suma(int256,int256)
-                  const call = prepareContractCall({
-                    contract,
-                    method: "function suma(int256 a, int256 b) returns (int256)",
-                    params: [BigInt(a), BigInt(b)],
-                  });
-
-                  // Estimar el gas de enviar la transacción
-
-                  const gasResult = await estimateGas(call);
-                  setEstimatedGas(gasResult as bigint);
-
-                  // Calcular el costo estimado en USD
-                  try {
-                    const [gasPrice, ethUsd] = await Promise.all([
-                      getGasPrice(),
-                      getEthUsdPrice(),
-                    ]);
-                    // gasResult (bigint) * gasPrice (bigint) = total wei
-                    const totalWei = (gasResult as bigint) * gasPrice;
-                    // Convertir a ETH (1 ETH = 1e18 wei)
-                    const totalEth = Number(totalWei) / 1e18;
-                    const usd = totalEth * ethUsd;
-                    setEstimatedUsd(usd);
-                  } catch (e) {
-                    setEstimatedUsd(null);
-                  }
-
-                  // 3. Send the transaction and wait for receipt
-                  const txResult = await sendTransaction({ transaction: call, account });
-
-                  // Muestra el hash de la transacción realizada para developer
-                  console.log("Transaction hash:", txResult.transactionHash);
-
-                  // 4. Espera a que la transacción sea confirmada
-                  const receipt = await waitForReceipt(txResult);
-
-                  const events = parseEventLogs({
-                    logs: receipt.logs,
-                    events: [resultadoSuma],
-                  });
-
-                  console.log("Eventos:", events);
-                  
-                  if (events.length) {
-                    const valor = Number(events[0].args.resultado);
-                    setResult(valor);
-                  }                     
-
-                } catch (err) {
-                  const errorMsg = err && typeof err === 'object' && 'message' in err
-                    ? (err as { message?: string }).message
-                    : String(err);
-                  setError("Error al llamar al contrato: " + (errorMsg || ''));
-                } finally {
-                  setLoading(false);
-                }
-              }}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full disabled:opacity-60"
-              disabled={loading}
-            >
-              {loading ? "Calculando..." : "Sumar"}
-            </button>
-            
-
-            {estimatedUsd !== null && estimatedUsd && (
-              <div className="text-sm text-white w-full text-center">
-                Costo estimado: ${estimatedUsd.toFixed(6)} USD
-              </div>
-            )}
-
-            <div className="text-lg text-white font-semibold w-full text-center min-h-[2rem]">
-              {error && <span className="text-red-300">{error}</span>}
-              {result !== null && !error && (
-                <span>Resultado: {result}</span>
-              )}
-            </div>
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-indigo-900 to-blue-500">
+      <Card className="w-full max-w-xl shadow-2xl border border-white/20 bg-white/20 backdrop-blur-xl">
+        <CardHeader className="flex flex-col items-center justify-center">
+          <CardTitle className="text-3xl font-bold text-white text-center w-full">BeTrusty DISS</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center">
+          <div className="w-full flex justify-center mb-2">
+            <ConnectButton client={client} chain={zkSyncSepolia} />
           </div>
-        )}
-      </motion.div>
+          {account && (
+            <>
+              <Tabs defaultValue="propietario" className="w-full mt-8">
+                <TabsList className="w-full flex mb-4">
+                  <TabsTrigger value="inquilino" className="flex-1">Inquilino</TabsTrigger>
+                  <TabsTrigger value="propietario" className="flex-1">Propietario</TabsTrigger>
+                </TabsList>
+                <div className="text-center text-gray-400 text-xs mb-[0.5px]">Tus Contratos de Deposito</div>
+                <TabsContent value="inquilino">
+                  <div
+                    className="flex flex-col items-center justify-center h-64 border rounded-lg bg-white/10 border-white/20 mt-4 relative"
+                  >
+                    <span className="text-gray-300 text-center">Aún no tienes ningún contrato de depósito.<br/>Debes ser invitado a uno y aceptarlo.</span>
+                  </div>
+                </TabsContent>
+                <TabsContent value="propietario">
+                  <div
+                    className="flex flex-col items-center justify-center h-64 border rounded-lg bg-white/10 border-white/20 mt-4 relative"
+                  >
+                    <span className="text-gray-300 text-center">Aún no tienes ningún contrato de depósito.<br/>Puedes crear uno en el botón de "+"</span>
+                    <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            className="absolute bottom-4 right-4 w-10 h-10 rounded-md text-2xl p-0 flex items-center justify-center"
+                            variant="secondary"
+                          >
+                            <span className="flex items-center justify-center w-full h-full relative" style={{ top: '-1px' }}>+</span>
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <div
+                            className="max-w-4xl w-full bg-white/70 backdrop-blur-2xl border border-white/40 rounded-2xl shadow-2xl px-10 py-8"
+                            style={{ boxShadow: '0 8px 40px 0 rgba(31, 38, 135, 0.18)' }}
+                          >
+                            <DialogHeader>
+                              <DialogTitle className="text-center w-full text-2xl font-bold mb-6 text-gray-800">Complete la información del acuerdo de depósito</DialogTitle>
+                            </DialogHeader>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5 mb-6">
+                              <div className="flex flex-col gap-1">
+                                <label className="font-semibold text-base text-gray-700">Nombre del Contrato de Depósito</label>
+                                <Input placeholder="Test" className="bg-white/90 border border-gray-300 focus:border-blue-400" />
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <label className="font-semibold text-base text-gray-700">Duración Contrato de Depósito</label>
+                                <Input placeholder="2 años" className="bg-white/90 border border-gray-300 focus:border-blue-400" />
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <label className="font-semibold text-base text-gray-700">Propietario (auto)</label>
+                                <Input placeholder="0x..." className="bg-white/90 border border-gray-300 focus:border-blue-400" />
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <label className="font-semibold text-base text-gray-700">URL Asociado a la Propiedad</label>
+                                <textarea placeholder="https://app.betrusty.io/..." className="bg-white/90 border border-gray-300 focus:border-blue-400 rounded-md px-3 py-2 min-h-[60px] resize-none" />
+                              </div>
+                              <div className="flex flex-col gap-1 md:col-span-2">
+                                <label className="font-semibold text-base text-gray-700">Monto de depósito</label>
+                                <Input placeholder="1000USD" className="bg-white/90 border border-gray-300 focus:border-blue-400" />
+                              </div>
+                            </div>
+                            <DialogFooter className="flex flex-row gap-4 justify-center mt-4">
+                              <DialogClose asChild>
+                                <Button variant="outline">Cancelar</Button>
+                              </DialogClose>
+                              <Button variant="secondary">Aceptar</Button>
+                            </DialogFooter>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                  </div>
+                </TabsContent>
+              </Tabs>
+              
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
