@@ -2,20 +2,7 @@
 
 import React from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 
 // Importamos la red de zkSync Sepolia y el sdk de ConnectButton de thirdweb
 import { zkSyncSepolia } from "thirdweb/chains";
@@ -43,9 +30,18 @@ import {
 import { useEstimateGas } from "thirdweb/react";
 import { getGasPrice, getEthUsdPrice } from "./utils";
 
+
+import { CrearDepositoDialog } from "@/components/Contracts/CrearDepositoDialog";
+
 export default function DISS() {
   // Obtenemos la cuenta activa del usuario
   const account = useActiveAccount();
+
+  const handleCrear = async (data: any) => {
+    console.log("Creando contrato con:", data)
+    // Aquí iría la lógica para desplegar el contrato en la blockchain
+    // Usando thirdweb
+  }
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-indigo-900 to-blue-500">
@@ -77,54 +73,9 @@ export default function DISS() {
                     className="flex flex-col items-center justify-center h-64 border rounded-lg bg-white/10 border-white/20 mt-4 relative"
                   >
                     <span className="text-gray-300 text-center">Aún no tienes ningún contrato de depósito.<br/>Puedes crear uno en el botón de "+"</span>
-                    <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            className="absolute bottom-4 right-4 w-10 h-10 rounded-md text-2xl p-0 flex items-center justify-center"
-                            variant="secondary"
-                          >
-                            <span className="flex items-center justify-center w-full h-full relative" style={{ top: '-1px' }}>+</span>
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <div
-                            className="max-w-4xl w-full bg-white/70 backdrop-blur-2xl border border-white/40 rounded-2xl shadow-2xl px-10 py-8"
-                            style={{ boxShadow: '0 8px 40px 0 rgba(31, 38, 135, 0.18)' }}
-                          >
-                            <DialogHeader>
-                              <DialogTitle className="text-center w-full text-2xl font-bold mb-6 text-gray-800">Complete la información del acuerdo de depósito</DialogTitle>
-                            </DialogHeader>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5 mb-6">
-                              <div className="flex flex-col gap-1">
-                                <label className="font-semibold text-base text-gray-700">Nombre del Contrato de Depósito</label>
-                                <Input placeholder="Test" className="bg-white/90 border border-gray-300 focus:border-blue-400" />
-                              </div>
-                              <div className="flex flex-col gap-1">
-                                <label className="font-semibold text-base text-gray-700">Duración Contrato de Depósito</label>
-                                <Input placeholder="2 años" className="bg-white/90 border border-gray-300 focus:border-blue-400" />
-                              </div>
-                              <div className="flex flex-col gap-1">
-                                <label className="font-semibold text-base text-gray-700">Propietario (auto)</label>
-                                <Input placeholder="0x..." className="bg-white/90 border border-gray-300 focus:border-blue-400" />
-                              </div>
-                              <div className="flex flex-col gap-1">
-                                <label className="font-semibold text-base text-gray-700">URL Asociado a la Propiedad</label>
-                                <textarea placeholder="https://app.betrusty.io/..." className="bg-white/90 border border-gray-300 focus:border-blue-400 rounded-md px-3 py-2 min-h-[60px] resize-none" />
-                              </div>
-                              <div className="flex flex-col gap-1 md:col-span-2">
-                                <label className="font-semibold text-base text-gray-700">Monto de depósito</label>
-                                <Input placeholder="1000USD" className="bg-white/90 border border-gray-300 focus:border-blue-400" />
-                              </div>
-                            </div>
-                            <DialogFooter className="flex flex-row gap-4 justify-center mt-4">
-                              <DialogClose asChild>
-                                <Button variant="outline">Cancelar</Button>
-                              </DialogClose>
-                              <Button variant="secondary">Aceptar</Button>
-                            </DialogFooter>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
+                    <div className="absolute bottom-4 right-4">
+                      <CrearDepositoDialog onCrear={handleCrear} propietarioAddress={account?.address} />
+                    </div>
                   </div>
                 </TabsContent>
               </Tabs>
