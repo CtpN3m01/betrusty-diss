@@ -120,3 +120,22 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Estilo para la barra de desplazamiento */
+::-webkit-scrollbar {
+  width: 8px; /* Ancho de la barra */
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1); /* Fondo translúcido */
+  border-radius: 10px; /* Bordes redondeados */
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.8); /* Color azul translúcido */
+  border-radius: 10px; /* Bordes redondeados */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 1); /* Color más intenso al pasar el mouse */
+}
