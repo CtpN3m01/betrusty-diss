@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useState } from 'react';
+import DepositosList from "../components/Contracts/DepositosList";
+import BuscarContratoInput from "../components/Contracts/BuscarContratoInput";
+import ButtonCrearContrato from "../components/Contracts/ButtonCrearContrato";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
@@ -12,42 +15,11 @@ import { ConnectButton } from "thirdweb/react";
 import { client } from "./client"
 import { useActiveAccount } from "thirdweb/react";
 
-// importamos las funciones necesarias para enviar transacciones al contrato
-import {
-  getContract,
-  prepareContractCall,
-  sendTransaction,
-} from "thirdweb";
 
-// Importamos las funciones necesarias para preparar el evento y parsear los logs para poder interactuar con el evento resultadoCalculado
-import { 
-  prepareEvent, 
-  waitForReceipt, 
-  parseEventLogs,  
-} from "thirdweb";
-
-// Importamos las funciones necesarias para estimar el uso de GAS
-import { useEstimateGas } from "thirdweb/react";
-import { getGasPrice, getEthUsdPrice } from "./utils";
-
-
-import { CrearDepositoDialog } from "@/components/Contracts/CrearDepositoDialog";
-
-export default function DISS() {
+const Page = () => {
   // Obtenemos la cuenta activa del usuario
   const account = useActiveAccount();
-  const [contratos, setContratos] = useState<any[]>([]);
   const [busqueda, setBusqueda] = useState("");
-
-  const handleCrear = async (data: any) => {
-    console.log("Creando contrato con:", data)
-    // Aquí iría la lógica para desplegar el contrato en la blockchain
-    // Usando thirdweb
-  }
-
-  const contratosFiltrados = contratos.filter((contrato) =>
-    contrato.token.toLowerCase().includes(busqueda.toLowerCase())
-  );
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-indigo-900 to-blue-500">
@@ -68,103 +40,26 @@ export default function DISS() {
                 </TabsList>
                 <div className="text-center text-gray-400 text-xs mb-[0.5px]">Tus Contratos de Deposito</div>
                 <TabsContent value="inquilino">
-                  <div
-                    className="flex flex-col items-center justify-center h-64 border rounded-lg bg-white/10 border-white/20 mt-4 relative"
-                  >
+                  <div className="flex flex-col items-center justify-center h-64 border rounded-lg bg-white/10 border-white/20 mt-4 relative">
                     <span className="text-gray-300 text-center">Aún no tienes ningún contrato de depósito.<br/>Debes ser invitado a uno y aceptarlo.</span>
                   </div>
                 </TabsContent>
                 <TabsContent value="propietario">
-                  <div
-                    className="flex flex-col items-center justify-center h-64 border rounded-lg bg-white/10 border-white/20 mt-4 relative"
-                  >
-                    {/* Input de búsqueda */}
+                  <div className="flex flex-col items-center justify-center h-64 border rounded-lg bg-white/10 border-white/20 mt-4 relative">
+                    {/* Input de búsqueda modularizado */}
                     <div className="w-full px-4 mb-4 absolute top-2 left-1 flex items-center">
-                      <input
-                        type="text"
-                        placeholder="Buscar contratos..."
-                        className="flex-1 h-10 px-4 text-sm border rounded-lg bg-white/15 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        onChange={(e) => setBusqueda(e.target.value)}
-                      />
-                      <button className="ml-2 h-10 w-10 flex items-center justify-center bg-blue-500 rounded-lg hover:bg-blue-600">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth={2}
-                          stroke="currentColor"
-                          className="w-5 h-5 text-white"
-                        >
-                          <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" />
-                          <line x1="16" y1="16" x2="21" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                        </svg>
-                      </button>
+                      <BuscarContratoInput value={busqueda} onChange={setBusqueda} />
                     </div>
 
-                    {/* Contenido principal */}
+                    {/* Lista de contratos modularizada */}
                     <div className="flex flex-col items-center justify-center w-full mt-16 h-full">
-                      {contratosFiltrados.length === 0 ? (
-                        <span className="text-gray-300 text-center">
-                          Aún no tienes ningún contrato de depósito.<br />Puedes crear uno en el botón de "+".
-                        </span>
-                      ) : (
-                        <div className="flex flex-col gap-2 w-full px-4 h-40 overflow-y-scroll scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-white/10">
-                          {contratosFiltrados.map((contrato, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center justify-between p-4 border rounded-lg bg-white/10 border-white/20 shadow-md"
-                            >
-                              <div>
-                                <p className="text-sm font-medium text-white">ID: {contrato.Propietario}</p>
-                                <p className="text-sm text-gray-300">Nombre del Contrato: {contrato.token}</p>
-                                <p className="text-sm text-gray-300">Estado: Pendiente de Depósito</p>
-                              </div>
-                              <div className="flex gap-2">
-                                <button className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 shadow-md">
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    strokeWidth={2}
-                                    stroke="currentColor"
-                                    className="w-5 h-5"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      d="M17 8l4 4m0 0l-4 4m4-4H3"
-                                    />
-                                  </svg>
-                                </button>
-                                <button className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 shadow-md">
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    strokeWidth={2}
-                                    stroke="currentColor"
-                                    className="w-5 h-5"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      d="M6 18L18 6M6 6l12 12"
-                                    />
-                                  </svg>
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      <DepositosList  />
                     </div>
 
-                    {/* Botón para crear contrato */}
+                    {/* Botón para crear contrato (aquí irá el dialog) */}
                     <div className="absolute bottom-4 right-4">
-                      <CrearDepositoDialog
-                        onCrear={(nuevoContrato) => setContratos((prev) => [...prev, nuevoContrato])}
-                        propietarioAddress={account?.address}
-                      />
+                      {/* Aquí puedes agregar el botón o dialog para crear contrato */}
+                      <ButtonCrearContrato />
                     </div>
                   </div>
                 </TabsContent>
@@ -176,4 +71,6 @@ export default function DISS() {
       </Card>
     </div>
   );
-}
+};
+
+export default Page;
