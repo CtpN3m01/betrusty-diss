@@ -1,32 +1,55 @@
+
 import React, { useEffect, useState } from "react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { getContract, readContract } from "thirdweb";
+import { zkSyncSepolia } from "thirdweb/chains";
+import { client } from "@/app/client";
+import { useReadContract } from "thirdweb/react";
 
 
-const DepositosList: React.FC = () => {
-  const [addresses, setAddresses] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [refresh, setRefresh] = useState(0);
 
 
-  // Permite refrescar la lista desde el exterior usando un evento personalizado
-  useEffect(() => {
-    const handler = () => setRefresh(r => r + 1);
-    window.addEventListener("contrato-creado", handler);
-    return () => window.removeEventListener("contrato-creado", handler);
-  }, []);
+interface DepositosListProps {
+  addresses: readonly string[];
+}
 
+const DepositosList: React.FC<DepositosListProps> = ({ addresses }) => {
+  // Handler para click en una fila
+  const handleRowClick = async (address: string) => {
+    try {
+      const contractContratoSeleccionado = getContract({
+        client,
+        address,
+        chain: zkSyncSepolia,
+      });
+      // Llamada directa usando thirdweb readContract
+      const result = await readContract({
+        contract: contractContratoSeleccionado,
+        method:
+          "function getContratoInfo() public view returns (string memory _nombreDelContrato, address _propietario, address _inquilino, uint8 _estado, uint256 _fechaInicio, uint256 _fechaFinal, uint256 _montoDepositoWei, uint256 _totalDepositadoWei, bool _aprobadoPorPropietario, bool _aprobadoPorInquilino, uint256 _porcentajePropietario, uint256 _porcentajeInquilino)",
+        params: [],
+      });
+      // Mapear el estado numérico a string
+      const ESTADO_LABELS = [
+        "Pendiente", // 0
+        "Activo",    // 1
+        "Finalizado" // 2
+      ];
+      const estadoIndex = Number(result[3]);
+      const estadoLabel = ESTADO_LABELS[estadoIndex] ?? `Desconocido (${estadoIndex})`;
+      console.log("Info del contrato seleccionado:", { ...result, estadoLabel });
+    } catch (error) {
+      console.error("Error al obtener info del contrato:", error);
+    }
+  };
 
-  if (loading) return <div className="text-gray-300">Cargando contratos...</div>;
   if (!addresses.length) {
     return <span className="text-gray-300 text-center">Aún no hay contratos desplegados.</span>;
   }
 
   return (
     <>
-      <div className="flex justify-end mb-2">
-        <Button variant="outline">Refrescar Contratos</Button>
-      </div>
       <Table>
         <TableHeader>
           <TableRow>
@@ -36,7 +59,7 @@ const DepositosList: React.FC = () => {
         </TableHeader>
         <TableBody>
           {addresses.map((address, idx) => (
-            <TableRow key={address}>
+            <TableRow key={address} className="cursor-pointer hover:bg-blue-100/10" onClick={() => handleRowClick(address)}>
               <TableCell>{idx + 1}</TableCell>
               <TableCell>{address}</TableCell>
             </TableRow>

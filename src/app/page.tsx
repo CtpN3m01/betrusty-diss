@@ -20,6 +20,7 @@ const Page = () => {
   // Obtenemos la cuenta activa del usuario
   const account = useActiveAccount();
   const [busqueda, setBusqueda] = useState("");
+  const [listaDeContratos, setListaDeContratos] = useState<readonly string[]>([]);
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-indigo-900 to-blue-500">
@@ -48,12 +49,12 @@ const Page = () => {
                   <div className="flex flex-col items-center justify-center h-64 border rounded-lg bg-white/10 border-white/20 mt-4 relative">
                     {/* Input de búsqueda modularizado */}
                     <div className="w-full px-4 mb-4 absolute top-2 left-1 flex items-center">
-                      <BuscarContratoInput value={busqueda} onChange={setBusqueda} />
+                      <BuscarContratoInput value={busqueda} onChange={setBusqueda} listaDeContratos={listaDeContratos} setListaDeContratos={setListaDeContratos}/>
                     </div>
 
                     {/* Lista de contratos modularizada */}
                     <div className="flex flex-col items-center justify-center w-full mt-16 h-full">
-                      <DepositosList  />
+                      <DepositosList addresses={listaDeContratos} />
                     </div>
 
                     {/* Botón para crear contrato (aquí irá el dialog) */}

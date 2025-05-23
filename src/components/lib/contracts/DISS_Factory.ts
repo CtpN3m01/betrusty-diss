@@ -68,7 +68,7 @@ export const abiFactory = [
 ];
 
 const contract = getContract({
-    address: "0x293dcF6364AfeACB74A4D1FdB2e1170DaF627a4F",
+    address: "0x2da14037e48d6d6db339da60466678748a63b955",
     chain: zkSyncSepolia,
     client,
 });

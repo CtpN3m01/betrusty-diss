@@ -7,17 +7,19 @@ import { client } from "@/app/client";
 interface BuscarContratoInputProps {
   value: string;
   onChange: (value: string) => void;
+  listaDeContratos: readonly string[];
+  setListaDeContratos: React.Dispatch<React.SetStateAction<readonly string[]>>;
 }
 
-const contract = getContract({
+const contractFactory = getContract({
   client,
-  address: "0x293dcF6364AfeACB74A4D1FdB2e1170DaF627a4F",
+  address: "0x2da14037e48d6d6db339da60466678748a63b955",
   chain: zkSyncSepolia,
 });
 
-const BuscarContratoInput: React.FC<BuscarContratoInputProps> = ({ value, onChange }) => {
+const BuscarContratoInput: React.FC<BuscarContratoInputProps> = ({ value, onChange, listaDeContratos, setListaDeContratos }) => {
   const { data, isLoading } = useReadContract({
-    contract,
+    contract: contractFactory,
     method: "function obtenerTodosLosContratos() public view returns (address[] memory)",
     params: [],
   });
@@ -36,7 +38,7 @@ const BuscarContratoInput: React.FC<BuscarContratoInputProps> = ({ value, onChan
         type="button"
         onClick={() => {
           if (!isLoading) {
-            console.log("Contratos obtenidos:", data);
+            setListaDeContratos(data ?? []);
           }
         }}
       >
