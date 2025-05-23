@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { crearDepositoEnFactory} from "@/components/lib/contracts/DISS_Factory";
+import { crearContratoDeDepositoEnFactory} from "@/components/lib/contracts/DISS_Factory";
 import { getEthUsdPrice } from "@/components/lib/contracts/PriceETH";
 import { useActiveAccount } from "thirdweb/react";
 
@@ -37,7 +37,7 @@ const ButtonCrearContrato: React.FC<ButtonCrearContratoProps> = ({  }) => {
         const fetchEthPrice = async () => {
             try {
                 const price = await getEthUsdPrice();
-                setEthUsdPrice(price);
+                setEthUsdPrice(price === null ? 0 : price);
             } catch (error) {
                 console.error("Error al obtener el precio de ETH/USD:", error);
                 setEthUsdPrice(0);
@@ -53,7 +53,7 @@ const ButtonCrearContrato: React.FC<ButtonCrearContratoProps> = ({  }) => {
         const montoDepositoWei = usdToWei(montoDolares, ethUsdPrice ?? 0);
         try {
             if (!account) throw new Error("No hay cuenta conectada");
-            const tx = await crearDepositoEnFactory({
+            const tx = await crearContratoDeDepositoEnFactory({
                 nombreDelContrato,
                 propietario,
                 inquilino,

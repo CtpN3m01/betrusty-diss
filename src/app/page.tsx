@@ -53,8 +53,18 @@ const Page = () => {
                   <TabsTrigger value="propietario" className="flex-1">Propietario</TabsTrigger>
                 </TabsList>
                 <TabsContent value="inquilino">
-                  <div className="flex flex-col items-center justify-center h-64 border rounded-lg bg-white/10 border-white/20 mt-4 relative">
-                    <span className="text-gray-300 text-center">Aún no tienes ningún contrato de depósito.<br/>Debes ser invitado a uno y aceptarlo.</span>
+                  <div className="flex flex-col items-center justify-center h-100 border rounded-lg bg-white/10 border-white/20 mt-4 relative">
+                    <button
+                      className="absolute top-4 right-4 bg-white/20 hover:bg-white/40 rounded-full p-2 transition-colors"
+                      onClick={obtenerListaDeContratos}
+                      title="Actualizar contratos"
+                    >
+                      <ReloadIcon className="w-5 h-5 text-white" />
+                    </button>
+                    {/* Lista de contratos modularizada */}
+                    <div className="flex flex-col items-center justify-center w-full mt-5 h-full">
+                      <DepositosList addresses={listaDeContratos} />
+                    </div>
                   </div>
                 </TabsContent>
                 <TabsContent value="propietario">

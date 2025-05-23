@@ -1,9 +1,10 @@
-
+import { useActiveAccount } from "thirdweb/react";
 import React, { useState } from "react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogDescription } from "@/components/ui/dialog";
-import { obtenerInfoContratoDeposito } from "@/components/lib/contracts/DISS_Factory";
+import { obtenerInfoContratoDeposito } from "@/components/lib/contracts/DISS_Contrato";
+import ButtonDepositar from "./ButtonDepositar";
 interface DepositosListProps {
   addresses: readonly string[];
 }
@@ -11,7 +12,10 @@ interface DepositosListProps {
 const DepositosList: React.FC<DepositosListProps> = ({ addresses }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedInfo, setSelectedInfo] = useState<any>(null);
+  const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const account = useActiveAccount();
 
   // Handler para click en una fila y obtener info del contrato
   const handleRowClick = async (address: string) => {
@@ -19,7 +23,8 @@ const DepositosList: React.FC<DepositosListProps> = ({ addresses }) => {
     setDialogOpen(true);
     setSelectedInfo(null);
     try {
-      const info = await obtenerInfoContratoDeposito(address);
+      const info = await obtenerInfoContratoDeposito(address!);
+      setSelectedAddress(address);
       setSelectedInfo(info);
     } catch (error) {
       console.error("Error al obtener info del contrato:", error);
@@ -78,12 +83,15 @@ const DepositosList: React.FC<DepositosListProps> = ({ addresses }) => {
               <div><b>Aprobado por Inquilino:</b> {selectedInfo.aprobadoPorInquilino ? "Sí" : "No"}</div>
               <div><b>% Propietario:</b> {selectedInfo.porcentajePropietario}</div>
               <div><b>% Inquilino:</b> {selectedInfo.porcentajeInquilino}</div>
-              <Button variant="outline" className="mt-4 w-full">Depositar</Button>
+              {/* Mostrar el botón solo si el usuario es el inquilino */}
+              {account?.address === selectedInfo.inquilino && (
+                <ButtonDepositar address={selectedAddress ?? ""} />
+              )}
             </div>
-          )}
-          <DialogClose asChild>
+            )}
+            <DialogClose asChild>
             <Button variant="outline" className="mt-4 w-full">Cerrar</Button>
-          </DialogClose>
+            </DialogClose>
         </DialogContent>
       </Dialog>
     </>
