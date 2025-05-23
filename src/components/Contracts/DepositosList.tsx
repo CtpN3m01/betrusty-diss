@@ -1,46 +1,30 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { getContract, readContract } from "thirdweb";
-import { zkSyncSepolia } from "thirdweb/chains";
-import { client } from "@/app/client";
-import { useReadContract } from "thirdweb/react";
-
-
-
-
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogDescription } from "@/components/ui/dialog";
+import { obtenerInfoContratoDeposito } from "@/components/lib/contracts/DISS_Factory";
 interface DepositosListProps {
   addresses: readonly string[];
 }
 
 const DepositosList: React.FC<DepositosListProps> = ({ addresses }) => {
-  // Handler para click en una fila
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedInfo, setSelectedInfo] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Handler para click en una fila y obtener info del contrato
   const handleRowClick = async (address: string) => {
+    setLoading(true);
+    setDialogOpen(true);
+    setSelectedInfo(null);
     try {
-      const contractContratoSeleccionado = getContract({
-        client,
-        address,
-        chain: zkSyncSepolia,
-      });
-      // Llamada directa usando thirdweb readContract
-      const result = await readContract({
-        contract: contractContratoSeleccionado,
-        method:
-          "function getContratoInfo() public view returns (string memory _nombreDelContrato, address _propietario, address _inquilino, uint8 _estado, uint256 _fechaInicio, uint256 _fechaFinal, uint256 _montoDepositoWei, uint256 _totalDepositadoWei, bool _aprobadoPorPropietario, bool _aprobadoPorInquilino, uint256 _porcentajePropietario, uint256 _porcentajeInquilino)",
-        params: [],
-      });
-      // Mapear el estado numérico a string
-      const ESTADO_LABELS = [
-        "Pendiente", // 0
-        "Activo",    // 1
-        "Finalizado" // 2
-      ];
-      const estadoIndex = Number(result[3]);
-      const estadoLabel = ESTADO_LABELS[estadoIndex] ?? `Desconocido (${estadoIndex})`;
-      console.log("Info del contrato seleccionado:", { ...result, estadoLabel });
+      const info = await obtenerInfoContratoDeposito(address);
+      setSelectedInfo(info);
     } catch (error) {
       console.error("Error al obtener info del contrato:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -55,6 +39,8 @@ const DepositosList: React.FC<DepositosListProps> = ({ addresses }) => {
           <TableRow>
             <TableHead>#</TableHead>
             <TableHead>Dirección del Contrato</TableHead>
+            <TableHead className="text-right">
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -66,6 +52,40 @@ const DepositosList: React.FC<DepositosListProps> = ({ addresses }) => {
           ))}
         </TableBody>
       </Table>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Información del Contrato</DialogTitle>
+          </DialogHeader>
+          <DialogDescription className="sr-only" />
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <span className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mr-2"></span>
+              <span className="text-black">Cargando información...</span>
+            </div>
+          ) : selectedInfo && (
+            <div className="space-y-2 text-sm">
+              <div><b>Nombre:</b> {selectedInfo.nombreDelContrato}</div>
+              <div><b>Propietario:</b> {selectedInfo.propietario}</div>
+              <div><b>Inquilino:</b> {selectedInfo.inquilino}</div>
+              <div><b>Estado:</b> {selectedInfo.estado}</div>
+              <div><b>Fecha Inicio:</b> {selectedInfo.fechaInicio}</div>
+              <div><b>Fecha Final:</b> {selectedInfo.fechaFinal}</div>
+              <div><b>Monto Depósito (USD):</b> {selectedInfo.montoDepositoUsd}</div>
+              <div><b>Total Depositado (USD):</b> {selectedInfo.totalDepositadoUsd}</div>
+              <div><b>Aprobado por Propietario:</b> {selectedInfo.aprobadoPorPropietario ? "Sí" : "No"}</div>
+              <div><b>Aprobado por Inquilino:</b> {selectedInfo.aprobadoPorInquilino ? "Sí" : "No"}</div>
+              <div><b>% Propietario:</b> {selectedInfo.porcentajePropietario}</div>
+              <div><b>% Inquilino:</b> {selectedInfo.porcentajeInquilino}</div>
+              <Button variant="outline" className="mt-4 w-full">Depositar</Button>
+            </div>
+          )}
+          <DialogClose asChild>
+            <Button variant="outline" className="mt-4 w-full">Cerrar</Button>
+          </DialogClose>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

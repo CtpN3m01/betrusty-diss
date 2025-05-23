@@ -2,24 +2,13 @@ import React, { useState } from "react";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
-import { crearDepositoEnFactory } from "@/components/lib/contracts/DISS_Factory";
-
+import { crearDepositoEnFactory} from "@/components/lib/contracts/DISS_Factory";
+import { getEthUsdPrice } from "@/components/lib/contracts/PriceETH";
 import { useActiveAccount } from "thirdweb/react";
 
 interface ButtonCrearContratoProps {
   propietarioAddress?: string;
 }
-
- // Aquí irá la lógica para crear contrato, se pasará como prop
-interface CrearContratoData {
-    nombreDelContrato: string;
-    propietario: string;
-    inquilino: string;
-    montoDepositoWei: string;
-    duracionEnSegundos: string;
-}
-
 
 
 const ButtonCrearContrato: React.FC<ButtonCrearContratoProps> = ({  }) => {
@@ -42,17 +31,29 @@ const ButtonCrearContrato: React.FC<ButtonCrearContratoProps> = ({  }) => {
         const ethValue = usdValue / ethUsdPrice;
         return BigInt(Math.floor(ethValue * 1e18)).toString();
     };
-
+    const [ethUsdPrice, setEthUsdPrice] = useState<number>();
     // Obtener el precio real de ETH/USD usando Chainlink
-    const [ethUsdPrice, setEthUsdPrice] = useState<number>(2666.85);
+    React.useEffect(() => {
+        const fetchEthPrice = async () => {
+            try {
+                const price = await getEthUsdPrice();
+                setEthUsdPrice(price);
+            } catch (error) {
+                console.error("Error al obtener el precio de ETH/USD:", error);
+                setEthUsdPrice(0);
+            }
+        };
+        fetchEthPrice();
+    }, []);
+    
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        const montoDepositoWei = usdToWei(montoDolares, ethUsdPrice);
+        const montoDepositoWei = usdToWei(montoDolares, ethUsdPrice ?? 0);
         try {
             if (!account) throw new Error("No hay cuenta conectada");
-            await crearDepositoEnFactory({
+            const tx = await crearDepositoEnFactory({
                 nombreDelContrato,
                 propietario,
                 inquilino,
@@ -60,6 +61,8 @@ const ButtonCrearContrato: React.FC<ButtonCrearContratoProps> = ({  }) => {
                 duracionEnSegundos,
                 account,
             });
+
+            console.log("Transacción enviada:", tx);
             setOpen(false);
             // Dispara evento para refrescar la lista de contratos
             window.dispatchEvent(new Event("contrato-creado"));
