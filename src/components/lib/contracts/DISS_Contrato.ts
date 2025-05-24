@@ -110,3 +110,75 @@ export async function depositarEnContrato({
     throw error;
   }
 }
+
+
+export async function aprobarFinalizacion({
+    account,
+    address, 
+}: {
+    account: any;
+    address: string;
+}) {
+    try {
+        const contratoDeposito = getContract({
+            client,
+            address,
+            chain: zkSyncSepolia,
+        });
+
+        // Prepara la llamada al método `depositar`
+        const tx = prepareContractCall({
+            contract: contratoDeposito,
+            method: "function aprobarFinalizacion() external",
+            params: [],
+        });
+
+        // Envía y confirma la transacción
+        const receipt = await sendAndConfirmTransaction({
+            account,
+            transaction: tx,
+        });
+
+        console.log("Aprobacion Realizada por:", receipt.from);
+        console.log("Hash de Tx:", receipt.transactionHash);
+        return receipt;
+  } catch (error) {
+    console.error("Error realizar aprobación:", error);
+    throw error;
+  }
+}
+
+
+export async function retirarFondos({
+    account,
+    address, 
+}: {
+    account: any;
+    address: string;
+}) {
+    try {
+        const contratoDeposito = getContract({
+            client,
+            address,
+            chain: zkSyncSepolia,
+        });
+
+        // Prepara la llamada al método `depositar`
+        const tx = prepareContractCall({
+            contract: contratoDeposito,
+            method: "function retirarFondos() external",
+            params: [],
+        });
+
+        // Envía y confirma la transacción
+        const receipt = await sendAndConfirmTransaction({
+            account,
+            transaction: tx,
+        });
+        console.log("Hash de Tx:", receipt.transactionHash); 
+        return receipt;
+    } catch (error) {
+        console.error("Error al retirar fondos:", error);
+        throw error;
+    }
+}

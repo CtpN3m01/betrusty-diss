@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogDescription } from "@/components/ui/dialog";
-import { obtenerInfoContratoDeposito } from "@/components/lib/contracts/DISS_Contrato";
+import { obtenerInfoContratoDeposito, aprobarFinalizacion, retirarFondos } from "@/components/lib/contracts/DISS_Contrato";
 import ButtonDepositar from "./ButtonDepositar";
 interface DepositosListProps {
   addresses: readonly string[];
@@ -87,6 +87,18 @@ const DepositosList: React.FC<DepositosListProps> = ({ addresses }) => {
               {account?.address === selectedInfo.inquilino && (
                 <ButtonDepositar address={selectedAddress ?? ""} />
               )}
+              <Button
+                className="w-full"
+                onClick={() => aprobarFinalizacion({ account, address: selectedAddress! })}
+              >
+                Aprobar Finalización
+              </Button>
+              <Button
+                className="w-full"
+                onClick={() => retirarFondos({ account, address: selectedAddress! })}
+              >
+                Retirar
+              </Button>
             </div>
             )}
             <DialogClose asChild>

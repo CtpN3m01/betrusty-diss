@@ -12,9 +12,6 @@ import { ConnectButton } from "thirdweb/react";
 import { client } from "./client"
 import { useActiveAccount } from "thirdweb/react";
 
-
-
-
 const Page = () => {
   // Obtenemos la cuenta activa del usuario
   const account = useActiveAccount();
