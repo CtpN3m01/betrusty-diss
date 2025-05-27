@@ -32,19 +32,18 @@ const ButtonCrearContrato: React.FC<ButtonCrearContratoProps> = ({  }) => {
         return BigInt(Math.floor(ethValue * 1e18)).toString();
     };
     const [ethUsdPrice, setEthUsdPrice] = useState<number>();
-    // Obtener el precio real de ETH/USD usando Chainlink
     React.useEffect(() => {
         const fetchEthPrice = async () => {
             try {
                 const price = await getEthUsdPrice();
                 setEthUsdPrice(price === null ? 0 : price);
+                setPropietario(account?.address || "");
             } catch (error) {
                 console.error("Error al obtener el precio de ETH/USD:", error);
                 setEthUsdPrice(0);
-            }
-        };
+            }        };
         fetchEthPrice();
-    }, []);
+    }, [account?.address]);
     
 
     const handleSubmit = async (e: React.FormEvent) => {

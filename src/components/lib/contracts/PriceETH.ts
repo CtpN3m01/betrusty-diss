@@ -18,9 +18,9 @@ export async function getEthUsdPrice(): Promise<number | null> {
   });
 
   if (!res.ok) return null;
-
   const data = await res.json();
   // Navega hasta el valor del precio en USD
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const value = data?.data?.[0]?.prices?.find((p: any) => p.currency === "usd")?.value;
   return value ? Number(value) : null;
 }

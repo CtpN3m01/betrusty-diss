@@ -3,25 +3,64 @@ import React, { useState } from "react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogDescription } from "@/components/ui/dialog";
-import { obtenerInfoContratoDeposito, aprobarFinalizacion, retirarFondos } from "@/components/lib/contracts/DISS_Contrato";
+import { obtenerInfoContratoDeposito, aprobarFinalizacion } from "@/components/lib/contracts/DISS_Contrato";
+import { extractBlockchainErrorMessage } from "@/lib/errorUtils";
 import ButtonDepositar from "./ButtonDepositar";
+
+interface ContractInfo {
+  nombreDelContrato: string;
+  propietario: string;
+  inquilino: string;
+  estado: string;
+  fechaInicio: string;
+  fechaFinal: string;
+  montoDepositoUsd: string;
+  totalDepositadoUsd: string;
+  aprobadoPorPropietario: boolean;
+  porcentajePropietario: number;
+  porcentajeInquilino: number;
+}
+
 interface DepositosListProps {
   addresses: readonly string[];
 }
 
 const DepositosList: React.FC<DepositosListProps> = ({ addresses }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedInfo, setSelectedInfo] = useState<any>(null);
-  const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
+  const [selectedInfo, setSelectedInfo] = useState<ContractInfo | null>(null);
+  const [selectedAddress, setSelectedAddress] = useState<string | null>(null);  const [porcentajeInquilino, setPorcentajeInquilino] = useState(0);
+  const [porcentajePropietario, setPorcentajePropietario] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [approvalLoading, setApprovalLoading] = useState(false);
+  const [approvalError, setApprovalError] = useState<string | null>(null);
+  const [approvalSuccess, setApprovalSuccess] = useState<string | null>(null);
 
   const account = useActiveAccount();
+
+  // Función para actualizar la información del contrato
+  const refreshContractInfo = async () => {
+    if (!selectedAddress) return;
+    setLoading(true);
+    try {
+      const updatedInfo = await obtenerInfoContratoDeposito(selectedAddress);
+      setSelectedInfo(updatedInfo);
+    } catch (error) {
+      console.error("Error al actualizar info del contrato:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Handler para click en una fila y obtener info del contrato
   const handleRowClick = async (address: string) => {
     setLoading(true);
     setDialogOpen(true);
     setSelectedInfo(null);
+    // Reset approval states when opening a new dialog
+    setApprovalError(null);
+    setApprovalSuccess(null);
+    setPorcentajeInquilino(0);
+    setPorcentajePropietario(0);
     try {
       const info = await obtenerInfoContratoDeposito(address!);
       setSelectedAddress(address);
@@ -33,30 +72,75 @@ const DepositosList: React.FC<DepositosListProps> = ({ addresses }) => {
     }
   };
 
-  if (!addresses.length) {
-    return <span className="text-gray-300 text-center">Aún no hay contratos desplegados.</span>;
-  }
+  // Handler para aprobar finalización con validación
+  const handleAprobarFinalizacion = async () => {
+    setApprovalError(null);
+    setApprovalSuccess(null);
+    setApprovalLoading(true);
 
+    try {
+      // Validar que los porcentajes sumen 100
+      if (porcentajeInquilino + porcentajePropietario !== 100) {
+        throw new Error("Los porcentajes deben sumar exactamente 100%");
+      }
+
+      if (porcentajeInquilino < 0 || porcentajePropietario < 0) {
+        throw new Error("Los porcentajes no pueden ser negativos");
+      }
+
+      if (!account || !selectedAddress) {
+        throw new Error("Falta información de la cuenta o dirección del contrato");
+      }
+
+      const receipt = await aprobarFinalizacion({ 
+        account, 
+        address: selectedAddress, 
+        porcentajeInquilino, 
+        porcentajePropietario 
+      });
+
+      setApprovalSuccess("Aprobación realizada con éxito");
+      console.log("Aprobación exitosa:", receipt.transactionHash);
+      
+      // Actualizar la información del contrato
+      refreshContractInfo();
+        } catch (err: unknown) {
+      const errorMessage = extractBlockchainErrorMessage(err);
+      setApprovalError(errorMessage);
+      console.error("Error completo en aprobación:", err);
+    } finally {
+      setApprovalLoading(false);
+    }
+  };
+  if (!addresses.length) {
+    return (
+      <div className="flex items-center justify-center h-full w-full">
+        <span className="text-white/70 text-center">Aún no hay contratos desplegados.</span>
+      </div>
+    );
+  }
   return (
     <>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>#</TableHead>
-            <TableHead>Dirección del Contrato</TableHead>
-            <TableHead className="text-right">
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {addresses.map((address, idx) => (
-            <TableRow key={address} className="cursor-pointer hover:bg-blue-100/10" onClick={() => handleRowClick(address)}>
-              <TableCell>{idx + 1}</TableCell>
-              <TableCell>{address}</TableCell>
+      <div className="w-full">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-white">#</TableHead>
+              <TableHead className="text-white">Dirección del Contrato</TableHead>
+              <TableHead className="text-right">
+              </TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {addresses.map((address, idx) => (
+              <TableRow key={address} className="cursor-pointer hover:bg-white/10 border-white/20" onClick={() => handleRowClick(address)}>
+                <TableCell className="text-white">{idx + 1}</TableCell>
+                <TableCell className="text-white font-mono text-sm">{address}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
@@ -80,25 +164,75 @@ const DepositosList: React.FC<DepositosListProps> = ({ addresses }) => {
               <div><b>Monto Depósito (USD):</b> {selectedInfo.montoDepositoUsd}</div>
               <div><b>Total Depositado (USD):</b> {selectedInfo.totalDepositadoUsd}</div>
               <div><b>Aprobado por Propietario:</b> {selectedInfo.aprobadoPorPropietario ? "Sí" : "No"}</div>
-              <div><b>Aprobado por Inquilino:</b> {selectedInfo.aprobadoPorInquilino ? "Sí" : "No"}</div>
               <div><b>% Propietario:</b> {selectedInfo.porcentajePropietario}</div>
-              <div><b>% Inquilino:</b> {selectedInfo.porcentajeInquilino}</div>
-              {/* Mostrar el botón solo si el usuario es el inquilino */}
+              <div><b>% Inquilino:</b> {selectedInfo.porcentajeInquilino}</div>              {/* Mostrar el botón solo si el usuario es el inquilino */}
               {account?.address === selectedInfo.inquilino && (
-                <ButtonDepositar address={selectedAddress ?? ""} />
+                <ButtonDepositar 
+                  address={selectedAddress ?? ""} 
+                  onDepositoExitoso={refreshContractInfo}
+                />
               )}
-              <Button
-                className="w-full"
-                onClick={() => aprobarFinalizacion({ account, address: selectedAddress! })}
-              >
-                Aprobar Finalización
-              </Button>
-              <Button
-                className="w-full"
-                onClick={() => retirarFondos({ account, address: selectedAddress! })}
-              >
-                Retirar
-              </Button>
+              {account?.address === selectedInfo.propietario && "Finalizado" === selectedInfo.fechaFinal && (
+                <>
+                  <div className="flex gap-2">
+                    <div className="flex flex-col flex-1">
+                      <label htmlFor="porcentajeInquilino" className="text-xs font-medium mb-1">Porcentaje Inquilino</label>
+                      <input
+                        id="porcentajeInquilino"
+                        type="number"
+                        className="border rounded px-2 py-1"
+                        max={100}
+                        value={porcentajeInquilino}
+                        onChange={e =>
+                          setPorcentajeInquilino(Number(e.target.value))
+                        }
+                        disabled={approvalLoading}
+                      />
+                    </div>
+                    <div className="flex flex-col flex-1">
+                      <label htmlFor="porcentajePropietario" className="text-xs font-medium mb-1">Porcentaje Propietario</label>
+                      <input
+                        id="porcentajePropietario"
+                        type="number"
+                        max={100}
+                        className="border rounded px-2 py-1"
+                        value={porcentajePropietario}
+                        onChange={e =>
+                          setPorcentajePropietario(Number(e.target.value))
+                        }
+                        disabled={approvalLoading}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Mensaje de validación de porcentajes */}
+                  {(porcentajeInquilino + porcentajePropietario) > 0 && (porcentajeInquilino + porcentajePropietario) !== 100 && (
+                    <div className="text-yellow-600 text-xs">
+                      Total: {porcentajeInquilino + porcentajePropietario}% (debe ser 100%)
+                    </div>
+                  )}
+                  
+                  <Button
+                    className="w-full"
+                    onClick={handleAprobarFinalizacion}
+                    disabled={approvalLoading || (porcentajeInquilino + porcentajePropietario) !== 100}
+                  >
+                    {approvalLoading ? "Procesando..." : "Aprobar Finalización"}
+                  </Button>
+                  
+                  {/* Mostrar mensajes de error y éxito */}
+                  {approvalError && (
+                    <div className="text-red-500 text-xs bg-red-50 p-2 rounded border">
+                      {approvalError}
+                    </div>
+                  )}
+                  {approvalSuccess && (
+                    <div className="text-green-600 text-xs bg-green-50 p-2 rounded border">
+                      {approvalSuccess}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
             )}
             <DialogClose asChild>

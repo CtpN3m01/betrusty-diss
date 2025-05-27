@@ -2,14 +2,14 @@
 import React, { useState } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import { Button } from "../ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogDescription } from "../ui/dialog";
 import { Input } from "../ui/input";
+import { extractBlockchainErrorMessage } from "@/lib/errorUtils";
 
 import { depositarEnContrato } from "../lib/contracts/DISS_Contrato";
 
 interface ButtonDepositarProps {
   address: string;
-  onDepositoExitoso?: (receipt: any) => void;
+  onDepositoExitoso?: (receipt: unknown) => void;
 }
 
 const ButtonDepositar: React.FC<ButtonDepositarProps> = ({ address, onDepositoExitoso }) => {
@@ -41,11 +41,12 @@ const ButtonDepositar: React.FC<ButtonDepositarProps> = ({ address, onDepositoEx
         account,
         address,
         cantidadEnUsd,
-      });
-      setSuccess("Depósito realizado con éxito");
+      });      setSuccess("Depósito realizado con éxito");
       if (onDepositoExitoso) onDepositoExitoso(receipt);
-    } catch (err: any) {
-      setError(err.message || "Error al depositar");
+    } catch (err: unknown) {
+      const errorMessage = extractBlockchainErrorMessage(err);
+      setError(errorMessage);
+      console.error("Error completo al depositar:", err);
     } finally {
       setLoading(false);
     }

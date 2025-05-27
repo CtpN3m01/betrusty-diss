@@ -1,9 +1,7 @@
 import { getEthUsdPrice } from "@/components/lib/contracts/PriceETH";
-
-import { getContract, prepareContractCall, sendTransaction, readContract, sendAndConfirmTransaction} from "thirdweb";
+import { getContract, prepareContractCall, readContract, sendAndConfirmTransaction} from "thirdweb";
 import { zkSyncSepolia } from "thirdweb/chains";
 import { client } from "@/app/client";
-
 
 // Obtener info de un contrato de depósito --------------------------------------------------------------
 export async function obtenerInfoContratoDeposito(address: string) {
@@ -16,7 +14,7 @@ export async function obtenerInfoContratoDeposito(address: string) {
     const result = await readContract({
         contract: contractContratoSeleccionado,
         method:
-        "function getContratoInfo() public view returns (string memory _nombreDelContrato, address _propietario, address _inquilino, uint8 _estado, uint256 _fechaInicio, uint256 _fechaFinal, uint256 _montoDepositoWei, uint256 _totalDepositadoWei, bool _aprobadoPorPropietario, bool _aprobadoPorInquilino, uint256 _porcentajePropietario, uint256 _porcentajeInquilino)",
+        "function getContratoInfo() public view returns (string memory _nombreDelContrato, address _propietario, address _inquilino, uint8 _estado, uint256 _fechaInicio, uint256 _fechaFinal, uint256 _montoDepositoWei, uint256 _totalDepositadoWei, bool _aprobadoPorPropietario, uint256 _porcentajePropietario, uint256 _porcentajeInquilino)",
         params: [],
     });
     // Mapear el estado numérico a string
@@ -49,14 +47,15 @@ export async function obtenerInfoContratoDeposito(address: string) {
         propietario: result[1],
         inquilino: result[2],
         estado: estadoLabel,
-        fechaInicio: new Date(Number(result[4]) * 1000).toLocaleString(),
+        fechaInicio: Number(result[4]) === 0
+            ? "Sin fecha de inicio"
+            : new Date(Number(result[4]) * 1000).toLocaleString(),
         fechaFinal: new Date(Number(result[5]) * 1000).toLocaleString(),
         montoDepositoUsd: montoDepositoUsd.toFixed(2),
         totalDepositadoUsd: totalDepositadoUsd.toFixed(2),
         aprobadoPorPropietario: result[8],
-        aprobadoPorInquilino: result[9],
-        porcentajePropietario: Number(result[10]),
-        porcentajeInquilino: Number(result[11]),
+        porcentajePropietario: Number(result[9]),
+        porcentajeInquilino: Number(result[10]),
     };
     return contratoInfo;
 }
@@ -66,6 +65,7 @@ export async function depositarEnContrato({
     address, 
     cantidadEnUsd,
 }: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     account: any;
     address: string;
     cantidadEnUsd: string;
@@ -101,12 +101,12 @@ export async function depositarEnContrato({
     const receipt = await sendAndConfirmTransaction({
       account,
       transaction: tx,
-    });
-
-    console.log("Depósito realizado:", receipt.transactionHash);
+    });    console.log("Depósito realizado:", receipt.transactionHash);
     return receipt;
   } catch (error) {
     console.error("Error al depositar:", error);
+    // Re-throw the error to preserve the original error information
+    // The error extraction will happen in the UI component
     throw error;
   }
 }
@@ -114,10 +114,15 @@ export async function depositarEnContrato({
 
 export async function aprobarFinalizacion({
     account,
-    address, 
+    address,
+    porcentajePropietario,
+    porcentajeInquilino, 
 }: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     account: any;
     address: string;
+    porcentajePropietario: number;
+    porcentajeInquilino: number;
 }) {
     try {
         const contratoDeposito = getContract({
@@ -129,21 +134,21 @@ export async function aprobarFinalizacion({
         // Prepara la llamada al método `depositar`
         const tx = prepareContractCall({
             contract: contratoDeposito,
-            method: "function aprobarFinalizacion() external",
-            params: [],
+            method: "function aprobarFinalizacion(uint256 _porcentajePropietario, uint256 _porcentajeInquilino) external",
+            params: [BigInt(porcentajePropietario), BigInt(porcentajeInquilino)],
         });
 
         // Envía y confirma la transacción
         const receipt = await sendAndConfirmTransaction({
             account,
             transaction: tx,
-        });
-
-        console.log("Aprobacion Realizada por:", receipt.from);
+        });        console.log("Aprobacion Realizada por:", receipt.from);
         console.log("Hash de Tx:", receipt.transactionHash);
         return receipt;
   } catch (error) {
     console.error("Error realizar aprobación:", error);
+    // Re-throw the error to preserve the original error information
+    // The error extraction will happen in the UI component
     throw error;
   }
 }
@@ -153,6 +158,7 @@ export async function retirarFondos({
     account,
     address, 
 }: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     account: any;
     address: string;
 }) {
@@ -174,11 +180,12 @@ export async function retirarFondos({
         const receipt = await sendAndConfirmTransaction({
             account,
             transaction: tx,
-        });
-        console.log("Hash de Tx:", receipt.transactionHash); 
+        });        console.log("Hash de Tx:", receipt.transactionHash); 
         return receipt;
     } catch (error) {
         console.error("Error al retirar fondos:", error);
+        // Re-throw the error to preserve the original error information
+        // The error extraction will happen in the UI component
         throw error;
     }
 }
