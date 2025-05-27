@@ -172,7 +172,7 @@ const DepositosList: React.FC<DepositosListProps> = ({ addresses }) => {
                   onDepositoExitoso={refreshContractInfo}
                 />
               )}
-              {account?.address === selectedInfo.propietario && "Finalizado" === selectedInfo.fechaFinal && (
+              {account?.address === selectedInfo.propietario && "Finalizado" !== selectedInfo.fechaFinal && (
                 <>
                   <div className="flex gap-2">
                     <div className="flex flex-col flex-1">
